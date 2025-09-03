@@ -1,1 +1,73 @@
-﻿<--- Inhalt aus meiner vorherigen Nachricht für web_cloud_init.yaml.tftpl --->
+﻿#cloud-config
+# WEB SERVER CLOUD-INIT
+package_update: true
+package_upgrade: true
+packages:
+  - nginx
+  - git
+  - python3-pip
+  - python3-venv
+  - sqlite3
+  - mariadb-client-core
+  - pkg-config
+  - libmariadb-dev
+  - libmariadb-dev-compat
+  - apache2-utils
+  - unzip
+
+write_files:
+  - path: /etc/systemd/system/ecommerce.service
+    permissions: "0644"
+    owner: root:root
+    content: |
+      [Unit]
+      Description=Ecommerce Gunicorn Service
+      After=network-online.target
+      Wants=network-online.target
+
+      [Service]
+      WorkingDirectory=/opt/Flask-Python-E-Commerce-Website
+      Environment="PATH=/opt/Flask-Python-E-Commerce-Website/.venv/bin"
+      Environment="DB_HOST=${db_host_fqdn}"
+      Environment="DB_NAME=${db_name}"
+      Environment="DB_USER=${db_user}"
+      Environment="DB_PASSWORD=${db_password}"
+      ExecStartPre=/bin/mkdir -p /var/log/gunicorn
+      ExecStart=/opt/Flask-Python-E-Commerce-Website/.venv/bin/gunicorn --bind 127.0.0.1:8000 ${wsgi_module} --access-logfile /var/log/gunicorn/ecommerce.access.log --error-logfile /var/log/gunicorn/ecommerce.error.log
+      Restart=always
+      RestartSec=3
+
+      [Install]
+      WantedBy=multi-user.target
+
+  - path: /etc/nginx/sites-available/ecommerce
+    permissions: "0644"
+    owner: root:root
+    content: |
+      server {
+          listen 80 default_server;
+          listen [::]:80 default_server;
+
+          location / {
+              proxy_pass http://127.0.0.1:8000;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+              auth_basic "Restricted Access";
+              auth_basic_user_file /etc/nginx/.htpasswd;
+          }
+      }
+
+runcmd:
+  - [bash, -lc, "mkdir -p /opt/Flask-Python-E-Commerce-Website && cd /opt"]
+  - [bash, -lc, "echo '>>> Downloading app zip'"]
+  - [bash, -lc, "curl -fsSL '${app_zip_url}' -o /opt/app.zip"]
+  - [bash, -lc, "echo '>>> Unzipping app.zip'"]
+  - [bash, -lc, "unzip -qo /opt/app.zip -d /opt/"]
+  - [bash, -lc, "if [ -d /opt/Flask-Python-E-Commerce-Website ]; then echo 'App dir OK'; else f=$(zipinfo -1 /opt/app.zip | head -1 | cut -d/ -f1); mv /opt/$f /opt/Flask-Python-E-Commerce-Website; fi"]
+  - [bash, -lc, "python3 -m venv /opt/Flask-Python-E-Commerce-Website/.venv"]
+  - [bash, -lc, "source /opt/Flask-Python-E-Commerce-Website/.venv/bin/activate && pip install --upgrade pip && if [ -f /opt/Flask-Python-E-Commerce-Website/requirements.txt ]; then pip install -r /opt/Flask-Python-E-Commerce-Website/requirements.txt; fi && pip install cs50"]
+  - [bash, -lc, "htpasswd -b -c /etc/nginx/.htpasswd '${basic_auth_user}' '${basic_auth_password}'"]
+  - [bash, -lc, "ln -sf /etc/nginx/sites-available/ecommerce /etc/nginx/sites-enabled/ecommerce && rm -f /etc/nginx/sites-enabled/default && nginx -t && systemctl restart nginx"]
+  - [bash, -lc, "systemctl daemon-reload && systemctl enable ecommerce && systemctl start ecommerce"]
