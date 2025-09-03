@@ -12,4 +12,4 @@ db_password = "V1s!onInside_2025#"
 domain_name = "webshop.tbz"
 instance_type_web = "t2.micro"
 instance_type_db  = "t2.micro"
-tags = { Owner="Marc Haenni", Company="Vision-Inside AG" }
+tags = { Owner="Marc Haenni", Company="Marc Haenni AG" }
