@@ -1,4 +1,4 @@
-﻿########################################
+########################################
 # NETWORK
 ########################################
 
@@ -20,7 +20,7 @@ resource "aws_vpc" "this" {
   cidr_block           = var.vpc_cidr
   enable_dns_support   = true
   enable_dns_hostnames = true
-  tags = merge(var.tags, { Name = "ecommerce-vpc" })
+  tags                 = merge(var.tags, { Name = "ecommerce-vpc" })
 }
 
 resource "aws_internet_gateway" "igw" {
@@ -33,14 +33,14 @@ resource "aws_subnet" "public" {
   cidr_block              = var.public_subnet_cidr
   availability_zone       = var.aws_az
   map_public_ip_on_launch = true
-  tags = merge(var.tags, { Name = "ecommerce-public" })
+  tags                    = merge(var.tags, { Name = "ecommerce-public" })
 }
 
 resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.this.id
   cidr_block        = var.private_subnet_cidr
   availability_zone = var.aws_az
-  tags = merge(var.tags, { Name = "ecommerce-private" })
+  tags              = merge(var.tags, { Name = "ecommerce-private" })
 }
 
 resource "aws_eip" "nat_eip" {
@@ -51,8 +51,8 @@ resource "aws_eip" "nat_eip" {
 resource "aws_nat_gateway" "nat" {
   allocation_id = aws_eip.nat_eip.id
   subnet_id     = aws_subnet.public.id
-  tags = merge(var.tags, { Name = "ecommerce-nat" })
-  depends_on = [aws_internet_gateway.igw]
+  tags          = merge(var.tags, { Name = "ecommerce-nat" })
+  depends_on    = [aws_internet_gateway.igw]
 }
 
 resource "aws_route_table" "public" {
@@ -250,14 +250,14 @@ resource "aws_instance" "web" {
   key_name                    = aws_key_pair.webserver.key_name
 
   user_data = templatefile("${path.module}/userdata/web_cloud_init.yaml.tftpl", {
-    app_zip_url          = var.app_zip_url
-    wsgi_module          = var.wsgi_module
-    basic_auth_user      = var.basic_auth_user
-    basic_auth_password  = var.basic_auth_password
-    db_host_fqdn         = "${local.db_host}.${var.domain_name}"
-    db_name              = var.db_name
-    db_user              = var.db_user
-    db_password          = var.db_password
+    app_zip_url         = var.app_zip_url
+    wsgi_module         = var.wsgi_module
+    basic_auth_user     = var.basic_auth_user
+    basic_auth_password = var.basic_auth_password
+    db_host_fqdn        = "${local.db_host}.${var.domain_name}"
+    db_name             = var.db_name
+    db_user             = var.db_user
+    db_password         = var.db_password
   })
 
   tags = merge(var.tags, { Name = "ecommerce-web" })
@@ -277,7 +277,7 @@ resource "aws_eip" "web_eip" {
 
 resource "aws_route53_zone" "private" {
   name = var.domain_name
-  vpc  { vpc_id = aws_vpc.this.id }
+  vpc { vpc_id = aws_vpc.this.id }
   comment = "Private Hosted Zone for Ecommerce"
 }
 
