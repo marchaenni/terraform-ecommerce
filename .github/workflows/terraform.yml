@@ -32,5 +32,3 @@ jobs:
         run: terraform validate
       - name: Terraform Plan
         run: terraform plan -input=false
-
-        
