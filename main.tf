@@ -210,13 +210,13 @@ resource "aws_network_acl_rule" "private_egress_all" {
 }
 
 ########################################
-# KEY PAIR
+# KEY PAIR (gleicher Key für Web & DB)
 ########################################
 
-resource "aws_key_pair" "webserver" {
-  key_name   = "webserver"
+resource "aws_key_pair" "lab_rsa" {
+  key_name   = "ecommerce-key"
   public_key = var.ssh_public_key
-  tags       = merge(var.tags, { Name = "webserver" })
+  tags       = merge(var.tags, { Name = "ecommerce-key" })
 }
 
 ########################################
@@ -229,14 +229,16 @@ resource "aws_instance" "db" {
   subnet_id                   = aws_subnet.private.id
   vpc_security_group_ids      = [aws_security_group.sg_db.id]
   associate_public_ip_address = false
-  key_name                    = aws_key_pair.webserver.key_name
+  key_name                    = aws_key_pair.lab_rsa.key_name
 
-  user_data = templatefile("${path.module}/userdata/db_cloud_init.yaml.tftpl", {
+  user_data                   = templatefile("${path.module}/userdata/db_cloud_init.yaml.tftpl", {
     db_name      = var.db_name
     db_user      = var.db_user
     db_password  = var.db_password
     sql_dump_url = var.sql_dump_url
   })
+  # >>> NEU: ersetzt Instanz automatisch, wenn sich user_data ändert
+  user_data_replace_on_change = true
 
   tags = merge(var.tags, { Name = "ecommerce-db" })
 }
@@ -247,9 +249,9 @@ resource "aws_instance" "web" {
   subnet_id                   = aws_subnet.public.id
   vpc_security_group_ids      = [aws_security_group.sg_webshop.id]
   associate_public_ip_address = true
-  key_name                    = aws_key_pair.webserver.key_name
+  key_name                    = aws_key_pair.lab_rsa.key_name
 
-  user_data = templatefile("${path.module}/userdata/web_cloud_init.yaml.tftpl", {
+  user_data                   = templatefile("${path.module}/userdata/web_cloud_init.yaml.tftpl", {
     app_zip_url         = var.app_zip_url
     wsgi_module         = var.wsgi_module
     basic_auth_user     = var.basic_auth_user
@@ -259,6 +261,8 @@ resource "aws_instance" "web" {
     db_user             = var.db_user
     db_password         = var.db_password
   })
+  # >>> NEU: ersetzt Instanz automatisch, wenn sich user_data ändert
+  user_data_replace_on_change = true
 
   tags = merge(var.tags, { Name = "ecommerce-web" })
 
