@@ -10,25 +10,43 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      # Terraform liest diese automatisch als -var
+      TF_VAR_app_zip_url:         ${{ secrets.APP_ZIP_URL }}        # URL oder Pfad zu deinem ZIP
+      TF_VAR_ssh_public_key:      ${{ secrets.SSH_PUBLIC_KEY }}     # dein öffentlicher SSH-Key
+      TF_VAR_db_password:         ${{ secrets.DB_PASSWORD }}
+      TF_VAR_basic_auth_password: ${{ secrets.BASIC_AUTH_PASSWORD }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: 1.9.5
+          terraform_wrapper: false
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-session-token:     ${{ secrets.AWS_SESSION_TOKEN }}   # im Learner Lab nötig
+          aws-region:            ${{ secrets.AWS_REGION }}          # z. B. us-east-1
+
       - name: Terraform Init
         run: terraform init
+
       - name: Terraform Format (non-blocking)
         run: terraform fmt -recursive -check -diff || true
+
       - name: Terraform Validate
         run: terraform validate
+
       - name: Terraform Plan
-        run: terraform plan -input=false
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -input=false -auto-approve tfplan
