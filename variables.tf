@@ -64,7 +64,7 @@ variable "db_name" {
 
 variable "db_user" {
   type    = string
-  default = "shopuser"
+  default = "shopuser2"
 }
 
 variable "db_password" {
