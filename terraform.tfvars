@@ -1,15 +1,26 @@
 aws_region          = "us-east-1"
 aws_az              = "us-east-1a"
-ssh_public_key      = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDWw7iPq/vQh6HEF9iYZmJFbrCccGP03kllD2y++i6LBAdgSTm7EIEchLckkT9pGGJtIm7XHMCpxh005xaz5pGupkt4rWoT0h7EzAtRMGmbztBm1pSAaol18HyG2Rd+evZDv34j7OMXYy/abORnLiia+cJ174FUrkrqJVhBa3kzS2q668tGYmVkFcfhwChZYpAjRf2tbfKlqgESt58etyX4TnQksSpEbn1nOjAM6U1Jb1fIh4F1vifvXSzgE9+fVrltytC4gOI33iEzLoI4GDlOHToGSaJFzqnhGQBU88EiLfFbCVtYv4Qrdqp/mgfVnTmK+JmhbTfwiPRNW5Tmto7RARrJF6gTEoZPjF7iRlLq6IHrd6cnRMbg8Nt46NEBvsGjeF09p+IcvNA9AMibmkZ41p4fVGjU+MnvJD7yngxw+6d5dguY4bn8Y9EwTdLVyUUVYjakQsWUOoOSS7jyIuOmjTtLNq/QR16ib8iqa8kWeNTJimBEpFfsr9lCSRcOyHxZyXv/rTY4nr3gEDyhZgFV3y15aZTSEwJ6UZ8rhn2hgrbuhFWwq0AtL5ZqSbMnByPIgZw18/qwY4yMurakl2uaWcSRut185WNhNFfVjeENhytXeFbOoKTj1vqFSRgkQWHDC8zMrhhoXCV8XVxEEHuF/WV24VtYCSlJjHkTnnC+Gw== lab"
-app_zip_url         = "https://raw.githubusercontent.com/marchaenni/terraform-ecommerce/main/01_Flask-Python-E-Commerce-Website.zip"
-sql_dump_url        = ""
-wsgi_module         = "application:app"
-basic_auth_user     = "webuser"
-basic_auth_password = "W7g4!vZpN3qS"
-db_name             = "ecommerce"
-db_user             = "shopuser"
-db_password         = "V1s!onInside_2025#"
-domain_name         = "webshop.tbz"
+
+# Netz & Instanzen
+vpc_cidr            = "10.11.5.0/24"
+public_subnet_cidr  = "10.11.5.192/26"
+private_subnet_cidr = "10.11.5.0/26"
 instance_type_web   = "t2.micro"
 instance_type_db    = "t2.micro"
+
+# App / Domain / Defaults
+app_zip_url         = "https://raw.githubusercontent.com/marchaenni/terraform-ecommerce/main/01_Flask-Python-E-Commerce-Website.zip"
+wsgi_module         = "application:app"
+domain_name         = "webshop.tbz"
+db_name             = "ecommerce"
+db_user             = "shopuser"
+
+# Tags
 tags                = { Owner = "Marc Haenni", Company = "Marc Haenni AG" }
+
+# --- NICHT mehr hier (kommen aus Secrets) ---
+# ssh_public_key
+# db_password
+# basic_auth_password
+
+
