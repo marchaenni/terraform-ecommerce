@@ -6,3 +6,6 @@ Automatisiert die ursprüngliche Aufgabe:
 - Route53 Private Zone (webshop.tbz)
 
 **Fixes:** keine Portkollision, sauberes Cloud-Init, Basic-Auth, DB-Zugriff nur Web.
+
+Aktueller Stand: 
+- Terraform läuft, die App noch nicht zu 100%
