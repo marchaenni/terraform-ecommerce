@@ -38,6 +38,11 @@ variable "instance_type_db" {
   default = "t2.micro"
 }
 
+variable "instance_type_monitoring" {
+  type    = string
+  default = "t3.medium"
+}
+
 variable "domain_name" {
   type    = string
   default = "webshop.tbz"

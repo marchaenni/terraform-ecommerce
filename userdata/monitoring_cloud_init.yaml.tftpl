@@ -1,0 +1,105 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+packages:
+  - docker.io
+  - docker-compose
+
+write_files:
+  - path: ${stack_dir}/docker-compose.yml
+    owner: ubuntu:ubuntu
+    permissions: "0644"
+    content: |
+      version: "3.8"
+
+      services:
+        prometheus:
+          image: prom/prometheus:v2.49.1
+          restart: unless-stopped
+          ports:
+            - "9090:9090"
+          command:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention.time=7d"
+          volumes:
+            - ./prometheus:/etc/prometheus
+            - prometheus_data:/prometheus
+
+        grafana:
+          image: grafana/grafana:10.4.2
+          restart: unless-stopped
+          depends_on:
+            - prometheus
+          ports:
+            - "3000:3000"
+          environment:
+            - GF_SECURITY_ADMIN_USER=admin
+            - GF_SECURITY_ADMIN_PASSWORD=admin
+            - GF_USERS_ALLOW_SIGN_UP=false
+          volumes:
+            - grafana_data:/var/lib/grafana
+            - ./grafana/provisioning:/etc/grafana/provisioning
+
+      volumes:
+        prometheus_data:
+        grafana_data:
+
+  - path: ${stack_dir}/prometheus/prometheus.yml
+    owner: ubuntu:ubuntu
+    permissions: "0644"
+    content: |
+      global:
+        scrape_interval: 15s
+        evaluation_interval: 15s
+
+      scrape_configs:
+        - job_name: "prometheus"
+          static_configs:
+            - targets:
+                - "localhost:9090"
+
+        - job_name: "webserver-node"
+          static_configs:
+            - targets:
+                - "${web_host_fqdn}:9100"
+
+  - path: ${stack_dir}/grafana/provisioning/datasources/datasource.yml
+    owner: ubuntu:ubuntu
+    permissions: "0644"
+    content: |
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+          editable: false
+
+  - path: /etc/systemd/system/monitoring.service
+    owner: root:root
+    permissions: "0644"
+    content: |
+      [Unit]
+      Description=Grafana, Prometheus Docker Compose Service
+      After=network.target docker.service
+      Requires=docker.service
+
+      [Service]
+      Type=oneshot
+      RemainAfterExit=yes
+      WorkingDirectory=${stack_dir}
+      ExecStart=/usr/bin/docker-compose up -d
+      ExecStop=/usr/bin/docker-compose down
+      TimeoutStartSec=0
+
+      [Install]
+      WantedBy=multi-user.target
+
+runcmd:
+  - [usermod, -aG, docker, ubuntu]
+  - [bash, -lc, "mkdir -p ${stack_parent}"]
+  - [bash, -lc, "chown -R ubuntu:ubuntu ${stack_parent}"]
+  - [systemctl, daemon-reload]
+  - [systemctl, enable, --now, monitoring.service]
