@@ -14,7 +14,7 @@ bootcmd:
 
 write_files:
   - path: ${stack_dir}/docker-compose.yml
-    owner: ubuntu:ubuntu
+    owner: root:root
     permissions: "0644"
     content: |
       version: "3.8"
@@ -53,7 +53,7 @@ write_files:
         grafana_data:
 
   - path: ${stack_dir}/prometheus/prometheus.yml
-    owner: ubuntu:ubuntu
+    owner: root:root
     permissions: "0644"
     content: |
       global:
@@ -72,7 +72,7 @@ write_files:
                 - "${web_host_fqdn}:9100"
 
   - path: ${stack_dir}/grafana/provisioning/datasources/datasource.yml
-    owner: ubuntu:ubuntu
+    owner: root:root
     permissions: "0644"
     content: |
       apiVersion: 1
@@ -108,5 +108,7 @@ runcmd:
   - [usermod, -aG, docker, ubuntu]
   - [bash, -lc, "mkdir -p ${stack_parent}"]
   - [bash, -lc, "chown -R ubuntu:ubuntu ${stack_parent}"]
+  - [systemctl, enable, --now, docker]
+  - [bash, -lc, "until systemctl is-active --quiet docker; do sleep 2; done"]
   - [systemctl, daemon-reload]
   - [systemctl, enable, --now, monitoring.service]
