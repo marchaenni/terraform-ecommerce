@@ -14,6 +14,7 @@ data "aws_ami" "ubuntu_jammy" {
 locals {
   web_host = "webserver"
   db_host  = "dbserver"
+  monitoring_host = "monitoring"
 }
 
 resource "aws_vpc" "this" {
@@ -153,6 +154,63 @@ resource "aws_security_group" "sg_db" {
   }
 }
 
+resource "aws_security_group" "sg_monitoring" {
+  name        = "sg_monitoring"
+  description = "Allow access to Grafana/Prometheus"
+  vpc_id      = aws_vpc.this.id
+  tags        = merge(var.tags, { Name = "sg_monitoring" })
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Grafana"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Alertmanager/Prometheus UI"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Additional monitoring apps"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "All egress"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_security_group_rule" "web_node_exporter" {
+  description              = "Allow Prometheus metrics scraping from monitoring host"
+  type                     = "ingress"
+  from_port                = 9100
+  to_port                  = 9100
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.sg_webshop.id
+  source_security_group_id = aws_security_group.sg_monitoring.id
+}
+
 resource "aws_network_acl" "public_nacl" {
   vpc_id     = aws_vpc.this.id
   subnet_ids = [aws_subnet.public.id]
@@ -275,6 +333,32 @@ resource "aws_eip" "web_eip" {
   tags     = merge(var.tags, { Name = "ecommerce-web-eip" })
 }
 
+resource "aws_instance" "monitoring" {
+  ami                         = data.aws_ami.ubuntu_jammy.id
+  instance_type               = var.instance_type_monitoring
+  subnet_id                   = aws_subnet.public.id
+  vpc_security_group_ids      = [aws_security_group.sg_monitoring.id]
+  associate_public_ip_address = true
+  key_name                    = aws_key_pair.lab_rsa.key_name
+
+  user_data = templatefile("${path.module}/userdata/monitoring_cloud_init.yaml.tftpl", {
+    stack_dir     = "/home/ubuntu/m169-scripts/KN05_B"
+    stack_parent  = "/home/ubuntu/m169-scripts"
+    web_host_fqdn = "${local.web_host}.${var.domain_name}"
+  })
+
+  user_data_replace_on_change = true
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+  }
+
+  tags = merge(var.tags, { Name = "ecommerce-monitoring" })
+
+  depends_on = [aws_instance.web]
+}
+
 ########################################
 # ROUTE53 PRIVATE ZONE + RECORDS
 ########################################
@@ -299,4 +383,12 @@ resource "aws_route53_record" "db_a" {
   type    = "A"
   ttl     = 30
   records = [aws_instance.db.private_ip]
+}
+
+resource "aws_route53_record" "monitoring_a" {
+  zone_id = aws_route53_zone.private.zone_id
+  name    = "${local.monitoring_host}.${var.domain_name}"
+  type    = "A"
+  ttl     = 30
+  records = [aws_instance.monitoring.private_ip]
 }

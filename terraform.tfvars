@@ -7,6 +7,7 @@ public_subnet_cidr  = "10.11.5.192/26"
 private_subnet_cidr = "10.11.5.0/26"
 instance_type_web   = "t2.micro"
 instance_type_db    = "t2.micro"
+instance_type_monitoring = "t3.medium"
 
 # App / Domain / Defaults
 app_zip_url         = "https://raw.githubusercontent.com/marchaenni/terraform-ecommerce/main/01_Flask-Python-E-Commerce-Website.zip"
