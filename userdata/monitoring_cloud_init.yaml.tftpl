@@ -5,6 +5,13 @@ packages:
   - docker.io
   - docker-compose
 
+bootcmd:
+  - [mkdir, -p, ${stack_dir}]
+  - [mkdir, -p, ${stack_dir}/prometheus]
+  - [mkdir, -p, ${stack_dir}/grafana]
+  - [mkdir, -p, ${stack_dir}/grafana/provisioning]
+  - [mkdir, -p, ${stack_dir}/grafana/provisioning/datasources]
+
 write_files:
   - path: ${stack_dir}/docker-compose.yml
     owner: ubuntu:ubuntu
