@@ -51,12 +51,12 @@ jobs:
         with:
           version: latest
 
-      - name: Snyk IaC Test (Terraform) - block on Low+
+      - name: Snyk IaC Test (Terraform) - block on High+
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           snyk iac test . \
-            --severity-threshold=low \
+            --severity-threshold=high \
             --report
       # -------------------------------------------------------------
 
