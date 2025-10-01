@@ -44,11 +44,25 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
+      # ---------- Snyk IaC Scan (BLOCK bei High/Critical) ----------
+      # CLI wird dynamisch installiert – kein Binary im Repo nötig
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@master
+        with:
+          version: latest
+
+      - name: Snyk IaC Test (Terraform) - block on High+
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk iac test . \
+            --severity-threshold=high \
+            --report
+      # -------------------------------------------------------------
+
       - name: Terraform Plan
         run: ./scripts/terraform_plan_with_unlock.sh
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -input=false -auto-approve tfplan
-
-        
