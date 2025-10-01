@@ -56,7 +56,7 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         run: |
           snyk iac test . \
-            --severity-threshold=high \
+            --severity-threshold=low \
             --report
       # -------------------------------------------------------------
 
